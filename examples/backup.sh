@@ -22,14 +22,15 @@ if [ ! -f "${RSA_PRIV}" ]; then
 fi
 
 # generate AES-256 key
-AES_KEY=$(openssl enc -aes-256-cbc -P -k "`dd if=/dev/urandom count=100 conv=ascii 2>/dev/null`" 2>/dev/null| grep key| sed -e "s/.*=//g")
+AES_KEY=$(openssl enc -aes-256-cbc -pbkdf2 -P -k "`dd if=/dev/urandom count=100 conv=ascii 2>/dev/null`" 2>/dev/null| grep key| sed -e "s/.*=//g")
+
 
 if [ -f "${FILE_TO_BACKUP}" ]; then
     # write encrypted data encryption key
     echo ${AES_KEY}| openssl rsautl -encrypt -inkey ./rsa.public -pubin > ${BACKUP_KEY_FILE}
 
     # encrypt the data
-    cat ${FILE_TO_BACKUP} | openssl aes-256-cbc -out ${BACKUP_FILE} -e -k ${AES_KEY}
+    cat ${FILE_TO_BACKUP} | gzip -9 | openssl aes-256-cbc -pbkdf2 -out ${BACKUP_FILE} -e -k "${AES_KEY}"
 else
     echo "nothing to backup"
 fi
